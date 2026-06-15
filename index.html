@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AcilRadar — Acil Tıp ve Kritik Bakım Makale Radarı</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-card: #161b22;
+      --bg-hover: #1c2128;
+      --border: #21262d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #f85149;
+      --tier1: #388bfd;
+      --tier2: #d2a8ff;
+      --tier3: #6e7681;
+      --score: #3fb950;
+      --gold: #e3b341;
+      --tag: #21262d;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, #f85149, #ff6b35);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .logo-name { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+    .logo-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .header-right { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .live-dot {
+      width: 7px; height: 7px;
+      background: var(--score);
+      border-radius: 50%;
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 1200px;
+      margin: 24px auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 24px;
+    }
+
+    /* ── FEATURED ── */
+    .featured {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--gold);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .featured-label {
+      font-size: 11px; font-weight: 600;
+      color: var(--gold); letter-spacing: 1px;
+      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .featured-title { font-size: 16px; font-weight: 600; line-height: 1.45; margin-bottom: 10px; }
+    .featured-title a { color: var(--text); text-decoration: none; }
+    .featured-title a:hover { color: var(--tier1); }
+    .featured-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    /* ── FILTERS ── */
+    .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .filter-btn {
+      padding: 5px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { border-color: var(--tier1); color: var(--tier1); }
+    .filter-btn.active { background: var(--tier1); border-color: var(--tier1); color: #fff; }
+
+    /* ── COUNT ── */
+    .article-count { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+    .article-count b { color: var(--text); }
+
+    /* ── ARTICLES ── */
+    .articles-list { display: flex; flex-direction: column; gap: 3px; }
+    .article-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 30px 1fr auto;
+      gap: 12px;
+      align-items: start;
+      transition: background 0.12s;
+      cursor: default;
+    }
+    .article-item:hover { background: var(--bg-hover); }
+    .art-num {
+      font-size: 13px; font-weight: 600;
+      color: var(--muted); padding-top: 2px;
+      text-align: right;
+    }
+    .art-body { min-width: 0; }
+    .art-title {
+      font-size: 14px; font-weight: 500;
+      color: var(--text); margin-bottom: 6px; line-height: 1.4;
+    }
+    .art-title a { color: inherit; text-decoration: none; }
+    .art-title a:hover { color: var(--tier1); }
+    .art-meta {
+      display: flex; align-items: center;
+      gap: 7px; flex-wrap: wrap;
+      font-size: 12px; color: var(--muted);
+    }
+    .art-score {
+      font-size: 15px; font-weight: 700;
+      color: var(--score); white-space: nowrap;
+      padding-top: 2px;
+    }
+
+    /* ── BADGES ── */
+    .badge {
+      padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.2px; white-space: nowrap;
+    }
+    .t1 { background: rgba(56,139,253,.15); color: var(--tier1); border: 1px solid rgba(56,139,253,.25); }
+    .t2 { background: rgba(210,168,255,.15); color: var(--tier2); border: 1px solid rgba(210,168,255,.25); }
+    .t3 { background: rgba(110,118,129,.15); color: var(--tier3); border: 1px solid rgba(110,118,129,.2); }
+    .btype { background: var(--tag); color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── PAGINATION ── */
+    .pagination {
+      display: flex; align-items: center;
+      justify-content: center; gap: 10px;
+      margin-top: 20px; padding: 16px 0;
+    }
+    .pg-btn {
+      padding: 6px 16px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text);
+      cursor: pointer; font-size: 13px;
+      transition: all 0.15s;
+    }
+    .pg-btn:hover:not(:disabled) { border-color: var(--tier1); color: var(--tier1); }
+    .pg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .pg-info { font-size: 13px; color: var(--muted); }
+
+    /* ── SIDEBAR ── */
+    .sidebar { display: flex; flex-direction: column; gap: 16px; }
+    .widget {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px;
+    }
+    .widget-title {
+      font-size: 10px; font-weight: 700;
+      color: var(--muted); letter-spacing: 1.2px;
+      text-transform: uppercase; margin-bottom: 12px;
+    }
+    .type-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 5px 0; font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+    .type-row:last-child { border-bottom: none; }
+    .type-row-name { color: var(--muted); }
+    .type-row-cnt {
+      font-weight: 600; color: var(--text);
+      background: var(--tag); padding: 1px 9px;
+      border-radius: 10px; font-size: 11px;
+    }
+    .topics { display: flex; flex-wrap: wrap; gap: 6px; }
+    .topic-tag {
+      padding: 3px 10px;
+      background: var(--tag);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px; color: var(--muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .topic-tag:hover { border-color: var(--tier1); color: var(--tier1); }
+    .how-text { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+    /* ── LOADING / ERROR ── */
+    .center-msg {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 0; color: var(--muted); gap: 16px;
+      text-align: center;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--tier1);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box {
+      background: rgba(248,81,73,.1);
+      border: 1px solid rgba(248,81,73,.3);
+      border-radius: 8px; padding: 20px;
+      color: var(--accent); text-align: center;
+      line-height: 1.7;
+    }
+    .dot { color: var(--border); user-select: none; }
+
+    /* ── GAP ANALİZİ ── */
+    .filter-btn.gap-btn { border-color: var(--score); color: var(--score); }
+    .filter-btn.gap-btn:hover,
+    .filter-btn.gap-btn.active { background: var(--score); border-color: var(--score); color: #0d1117; }
+
+    #gapPanel { padding-bottom: 32px; }
+    .gap-header { margin-bottom: 20px; }
+    .gap-header-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .gap-header-sub { font-size: 13px; color: var(--muted); }
+    .gap-section-label {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; margin: 20px 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .gap-section-desc { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+    .gap-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px; padding: 14px 16px; margin-bottom: 8px;
+    }
+    .gap-card-head {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    }
+    .gap-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .gap-term { font-size: 15px; font-weight: 600; color: var(--text); flex: 1; }
+    .gap-cnt {
+      font-size: 11px; color: var(--muted);
+      background: var(--tag); padding: 2px 8px; border-radius: 10px;
+    }
+    .gap-type { font-size: 13px; color: #f0883e; margin-bottom: 6px; }
+    .gap-suggest { font-size: 13px; color: var(--score); margin-bottom: 10px; }
+    .gap-arts {
+      border-top: 1px solid var(--border); padding-top: 8px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .gap-art-link { font-size: 12px; color: var(--muted); text-decoration: none; }
+    .gap-art-link::before { content: '↳ '; }
+    .gap-art-link:hover { color: var(--tier1); }
+    .underrep-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 8px;
+    }
+    .underrep-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--gold);
+      border-radius: 6px; padding: 12px;
+    }
+    .underrep-term { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+    .underrep-art { font-size: 11px; color: var(--muted); text-decoration: none; display: block; line-height: 1.4; margin-bottom: 6px; }
+    .underrep-art:hover { color: var(--tier1); }
+
+    @media (max-width: 800px) {
+      .container { grid-template-columns: 1fr; padding: 0 16px; }
+      .sidebar { order: -1; }
+      .header-inner { flex-direction: column; gap: 8px; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="38" height="38" rx="9" fill="url(#logoGrad)"/>
+          <!-- Dış halka -->
+          <circle cx="19" cy="19" r="13" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+          <!-- Orta halka -->
+          <circle cx="19" cy="19" r="8" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+          <!-- Radar tarama dilimi -->
+          <path d="M19 19 L19 6 A13 13 0 0 1 30.26 25.5 Z" fill="rgba(255,255,255,0.18)"/>
+          <!-- Yatay & dikey çizgiler -->
+          <line x1="19" y1="5" x2="19" y2="33" stroke="rgba(255,255,255,0.2)" stroke-width="0.7"/>
+          <line x1="5" y1="19" x2="33" y2="19" stroke="rgba(255,255,255,0.2)" stroke-width="0.7"/>
+          <!-- Merkez nokta -->
+          <circle cx="19" cy="19" r="2" fill="white"/>
+          <!-- Blip (tespit edilen makale) -->
+          <circle cx="25" cy="11" r="2.2" fill="white" opacity="0.9"/>
+          <circle cx="25" cy="11" r="4" stroke="white" stroke-width="0.6" opacity="0.4"/>
+          <defs>
+            <linearGradient id="logoGrad" x1="0" y1="0" x2="38" y2="38">
+              <stop offset="0%" stop-color="#e53935"/>
+              <stop offset="100%" stop-color="#c62828"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">ACİLRADAR</div>
+        <div class="logo-sub">Acil Tıp ve Kritik Bakım Makale Radarı</div>
+      </div>
+    </div>
+    <div class="header-right" id="lastUpdated">
+      <div class="live-dot"></div>
+      <span>Yükleniyor…</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="main-panel">
+    <div class="featured" id="featuredBox" style="display:none">
+      <div class="featured-label">★ &nbsp;HAFTANIN MAKALESİ</div>
+      <div class="featured-title" id="featuredTitle"></div>
+      <div class="featured-meta" id="featuredMeta"></div>
+    </div>
+
+    <div class="filters" id="filterRow"></div>
+    <div class="article-count" id="artCount"></div>
+
+    <div id="artContainer">
+      <div class="center-msg">
+        <div class="spinner"></div>
+        <div>PubMed'den son 7 günün makaleleri yükleniyor…</div>
+      </div>
+    </div>
+
+    <div class="pagination" id="pagRow" style="display:none"></div>
+    <div id="gapPanel" style="display:none"></div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="widget">
+      <div class="widget-title">Makale Tipleri</div>
+      <div id="typeStats"><div style="color:var(--muted);font-size:13px">Yükleniyor…</div></div>
+    </div>
+    <div class="widget">
+      <div class="widget-title">Popüler Konular</div>
+      <div class="topics" id="topicCloud"><div style="color:var(--muted);font-size:13px">Yükleniyor…</div></div>
+    </div>
+    <div class="widget">
+      <div class="widget-title">Nasıl Çalışır?</div>
+      <p class="how-text">
+        Tek veri kaynağı <strong style="color:var(--text)">PubMed</strong>'dir. Her gün PubMed'e bağlanarak son 7 günde yayımlanan acil tıp ve kritik bakım dergilerindeki makaleler taranır. Başka bir veri tabanı veya kaynak kullanılmaz.<br><br>
+        İnsan eliyle seçilmiş hiçbir şey yok — tamamen otomatik.
+      </p>
+      <p class="how-text" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:11px; opacity:0.7;">
+        ⚠️ Dergi quartile bilgileri <a href="https://wos-journal.info" target="_blank" rel="noopener" style="color:var(--tier1);text-decoration:none;">wos-journal.info</a> açık kaynağından alınmıştır. Doğrulama için <a href="https://mjl.clarivate.com" target="_blank" rel="noopener" style="color:var(--tier1);text-decoration:none;">Web of Science Journal Citation Reports</a>'u kontrol edin.
+      </p>
+    </div>
+    <div class="widget">
+      <div class="widget-title">Tier Nedir?</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span class="badge t1" style="min-width:28px;text-align:center;flex-shrink:0;">T1</span>
+          <span style="font-size:12px;color:var(--muted)">Web of Science <strong style="color:var(--text)">SCIE</strong> kapsamında <strong style="color:var(--text)">Q1</strong> olan dergiler — alanındaki en etkili %25'lik dilim</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span class="badge t2" style="min-width:28px;text-align:center;flex-shrink:0;">T2</span>
+          <span style="font-size:12px;color:var(--muted)">SCIE kapsamında <strong style="color:var(--text)">Q2</strong> olan dergiler veya ESCI'de <strong style="color:var(--text)">Q1</strong> olan dergiler</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span class="badge t3" style="min-width:28px;text-align:center;flex-shrink:0;">T3</span>
+          <span style="font-size:12px;color:var(--muted)">SCIE kapsamında <strong style="color:var(--text)">Q3–Q4</strong> olan dergiler veya <strong style="color:var(--text)">ESCI</strong> indeksindeki dergiler</span>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px;opacity:0.6;line-height:1.5;">
+        Sınıflandırma <a href="https://wos-journal.info" target="_blank" rel="noopener" style="color:var(--tier1);text-decoration:none;">WoS Journal Citation Reports</a> verilerine dayanmaktadır.
+      </p>
+    </div>
+    <div class="widget">
+      <div class="widget-title">Etki Puanı Nedir? <span style="color:var(--score)">↑XX</span></div>
+      <p class="how-text">
+        Her makalenin sağında görünen yeşil <span style="color:var(--score);font-weight:700">↑</span> puanı, o makalenin algoritmik <em>etki skorudur</em> ve üç bileşenden oluşur:
+      </p>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:7px;">
+        <div style="font-size:12px;display:flex;gap:8px;align-items:flex-start">
+          <span style="color:var(--tier1);font-weight:700;min-width:16px">①</span>
+          <span style="color:var(--muted)"><strong style="color:var(--text)">Dergi puanı</strong> — WoS quartile'ına göre belirlenir (Q1 dergi = yüksek taban puan)</span>
+        </div>
+        <div style="font-size:12px;display:flex;gap:8px;align-items:flex-start">
+          <span style="color:var(--tier1);font-weight:700;min-width:16px">②</span>
+          <span style="color:var(--muted)"><strong style="color:var(--text)">Makale türü bonusu</strong> — Kılavuz &gt; RKÇ &gt; Meta-analiz &gt; Özgün &gt; Derleme &gt; Editoryal</span>
+        </div>
+        <div style="font-size:12px;display:flex;gap:8px;align-items:flex-start">
+          <span style="color:var(--tier1);font-weight:700;min-width:16px">③</span>
+          <span style="color:var(--muted)"><strong style="color:var(--text)">Tazelik bonusu</strong> — Bugün yayımlanan makaleler daha yüksek puan alır (+7 → 0)</span>
+        </div>
+      </div>
+      <p class="how-text" style="margin-top:10px;font-size:11px;opacity:0.6;">
+        Puan yalnızca sıralama içindir; klinik önem yargısı değildir.
+      </p>
+    </div>
+  </aside>
+</div>
+
+<script>
+// ────────────────────────────────────────────────────────
+// CONFIG
+// ────────────────────────────────────────────────────────
+const BASE = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
+const RETMAX = 500;
+const PER_PAGE = 30;
+
+// Journals: search term, display name, tier, base score
+const JOURNALS = [
+  // ── KRİTİK BAKIM — Q1 SCIE (T1) ────────────────────────
+  { q:'Critical care[Jour]',                                        abbr:'Crit Care',                  d:'Critical care (London, England)',                                        tier:1, base:55 },
+  { q:'Intensive care medicine[Jour]',                              abbr:'Intensive Care Med',         d:'Intensive care medicine',                                                tier:1, base:56 },
+  { q:'Critical care medicine[Jour]',                              abbr:'Crit Care Med',              d:'Critical care medicine',                                                 tier:1, base:54 },
+  { q:'Chest[Jour]',                                               abbr:'Chest',                      d:'Chest',                                                                  tier:1, base:52 },
+  { q:'Resuscitation[Jour]',                                        abbr:'Resuscitation',              d:'Resuscitation',                                                          tier:1, base:50 },
+  { q:'"Journal of critical care"[Jour]',                          abbr:'J Crit Care',               d:'Journal of critical care',                                               tier:1, base:42 },
+  { q:'"Intensive care medicine experimental"[Jour]',              abbr:'Intensive Care Med Exp',     d:'Intensive care medicine experimental',                                   tier:2, base:34 },
+  { q:'"Critical care and resuscitation"[Jour]',                   abbr:'Crit Care Resusc',           d:'Critical care and resuscitation',                                        tier:2, base:34 },
+
+  // ── ACİL TIP — Q1 SCIE (T1) ────────────────────────────
+  { q:'Annals of emergency medicine[Jour]',                         abbr:'Ann Emerg Med',             d:'Annals of emergency medicine',                                           tier:1, base:50 },
+  { q:'"European journal of emergency medicine"[Jour]',             abbr:'Eur J Emerg Med',           d:'European journal of emergency medicine',                                 tier:1, base:46 },
+  { q:'Academic emergency medicine[Jour]',                          abbr:'Acad Emerg Med',            d:'Academic emergency medicine',                                            tier:1, base:46 },
+  { q:'"Emergency medicine journal"[Jour]',                         abbr:'Emerg Med J',               d:'Emergency medicine journal : EMJ',                                       tier:1, base:44 },
+  { q:'"BMC emergency medicine"[Jour]',                             abbr:'BMC Emerg Med',             d:'BMC emergency medicine',                                                 tier:1, base:42 },
+  { q:'"Prehospital and disaster medicine"[Jour]',                  abbr:'Prehosp Disaster Med',      d:'Prehospital and disaster medicine',                                      tier:1, base:40 },
+
+  // ── ACİL TIP — Q2 SCIE (T2) ────────────────────────────
+  { q:'"Canadian journal of emergency medicine"[Jour]',             abbr:'CJEM',                      d:'CJEM : Canadian journal of emergency medicine',                          tier:2, base:36 },
+  { q:'"Western journal of emergency medicine"[Jour]',              abbr:'West J Emerg Med',          d:'Western journal of emergency medicine',                                  tier:2, base:35 },
+  { q:'"American journal of emergency medicine"[Jour]',             abbr:'Am J Emerg Med',            d:'The American journal of emergency medicine',                             tier:2, base:35 },
+  { q:'"Prehospital emergency care"[Jour]',                         abbr:'Prehosp Emerg Care',        d:'Prehospital emergency care',                                             tier:2, base:34 },
+
+  // ── ACİL TIP — Q3 SCIE (T3) ────────────────────────────
+  { q:'"Emergency medicine australasia"[Jour]',                     abbr:'Emerg Med Australas',       d:'Emergency medicine Australasia : EMA',                                   tier:3, base:24 },
+  { q:'"Journal of emergency medicine"[Jour]',                      abbr:'J Emerg Med',               d:'The Journal of emergency medicine',                                      tier:3, base:22 },
+
+  // ── ACİL TIP — ESCI (T3) ───────────────────────────────
+  { q:'"Turkish journal of emergency medicine"[Jour]',              abbr:'Turk J Emerg Med',          d:'Turkish journal of emergency medicine',                                  tier:3, base:26 },
+  { q:'"JACEP open"[Jour]',                                         abbr:'JACEP Open',                d:'JACEP open',                                                             tier:3, base:24 },
+  { q:'"International journal of emergency medicine"[Jour]',        abbr:'Int J Emerg Med',           d:'International journal of emergency medicine',                            tier:3, base:22 },
+
+  // ── TRAVMA & CERRAHİ (T1) ──────────────────────────────
+  { q:'"Journal of trauma and acute care surgery"[Jour]',           abbr:'J Trauma Acute Care Surg',  d:'The journal of trauma and acute care surgery',                           tier:1, base:48 },
+  { q:'Annals of surgery[Jour]',                                    abbr:'Ann Surg',                  d:'Annals of surgery',                                                      tier:1, base:50 },
+  { q:'Shock[Jour]',                                                abbr:'Shock',                     d:'Shock',                                                                  tier:1, base:44 },
+  { q:'"Journal of the American College of Surgeons"[Jour]',        abbr:'J Am Coll Surg',            d:'Journal of the American College of Surgeons',                            tier:1, base:48 },
+  { q:'"Scandinavian journal of trauma"[Jour]',                     abbr:'Scand J Trauma Resusc Emerg Med', d:'Scandinavian journal of trauma, resuscitation and emergency medicine', tier:2, base:36 },
+  { q:'Injury[Jour]',                                               abbr:'Injury',                    d:'Injury',                                                                 tier:2, base:34 },
+
+  // ── PEDİATRİK ACİL (T2) ────────────────────────────────
+  { q:'"Pediatric emergency care"[Jour]',                           abbr:'Pediatr Emerg Care',        d:'Pediatric emergency care',                                               tier:2, base:32 },
+  { q:'"Ulusal travma ve acil cerrahi dergisi"[Jour]',              abbr:'Ulus Travma Acil Cerrahi Derg', d:'Ulusal travma ve acil cerrahi dergisi',                              tier:3, base:18 },
+
+  // ── KARDIYOVASKÜLER & NÖROLOJİ (T1) ───────────────────
+  { q:'Circulation[Jour]',                                          abbr:'Circulation',               d:'Circulation',                                                            tier:1, base:63 },
+  { q:'"Circulation: Heart Failure"[Jour]',                         abbr:'Circ Heart Fail',           d:'Circulation: Heart failure',                                             tier:1, base:58 },
+  { q:'"Circulation: Arrhythmia and Electrophysiology"[Jour]',      abbr:'Circ Arrhythm Electrophysiol', d:'Circulation: Arrhythmia and electrophysiology',                      tier:1, base:56 },
+  { q:'"Circulation: Cardiovascular Imaging"[Jour]',                abbr:'Circ Cardiovasc Imaging',   d:'Circulation: Cardiovascular imaging',                                    tier:1, base:55 },
+  { q:'"Circulation: Cardiovascular Interventions"[Jour]',          abbr:'Circ Cardiovasc Interv',    d:'Circulation: Cardiovascular interventions',                               tier:1, base:55 },
+  { q:'"Circulation: Genomic and Precision Medicine"[Jour]',        abbr:'Circ Genom Precis Med',     d:'Circulation: Genomic and precision medicine',                            tier:1, base:48 },
+  { q:'Stroke[Jour]',                                               abbr:'Stroke',                    d:'Stroke',                                                                 tier:1, base:52 },
+  // ── KRİTİK BAKIM — ULUSAL (T2) ─────────────────────────
+  { q:'"Medicina intensiva"[Jour]',                                  abbr:'Med Intensiva (Engl Ed)',   d:'Medicina intensiva (English edition)',                                   tier:1, base:48 },
+
+  // ── GENEL TIP (T1) ─────────────────────────────────────
+  { q:'"New England journal of medicine"[Jour]',                    abbr:'N Engl J Med',              d:'The New England journal of medicine',                                    tier:1, base:88 },
+  { q:'JAMA[Jour]',                                                 abbr:'JAMA',                      d:'JAMA',                                                                   tier:1, base:80 },
+  { q:'Lancet[Jour]',                                               abbr:'Lancet',                    d:'The Lancet',                                                             tier:1, base:83 },
+  { q:'BMJ[Jour]',                                                  abbr:'BMJ',                       d:'BMJ',                                                                    tier:1, base:68 },
+
+  // ── ULUSAL (T3) ─────────────────────────────────────────
+  { q:'"Turkish journal of emergency medicine"[Jour]',            d:'Turkish journal of emergency medicine',                                  tier:3, base:20 },
+  { q:'"Ulusal travma ve acil cerrahi dergisi"[Jour]',            d:'Ulusal travma ve acil cerrahi dergisi',                                  tier:3, base:18 },
+];
+
+// Article types: pubmed strings → Turkish label, key, score bonus
+const TYPES = [
+  { pm:['practice guideline','guideline'],   label:'Kılavuz',           key:'kilavuz',    bonus:18 },
+  { pm:['meta-analysis'],                    label:'Meta-analiz',        key:'meta',       bonus:15 },
+  { pm:['systematic review'],                label:'Sistematik derleme', key:'sistematik', bonus:12 },
+  { pm:['randomized controlled trial'],      label:'RKÇ',                key:'rkc',        bonus:14 },
+  { pm:['clinical trial'],                   label:'Klinik çalışma',     key:'klinik',     bonus:10 },
+  { pm:['review'],                           label:'Derleme',            key:'derleme',    bonus:7  },
+  { pm:['case reports'],                     label:'Olgu',               key:'olgu',       bonus:0  },
+  { pm:['editorial'],                        label:'Editoryal',          key:'editoryal',  bonus:-5 },
+  { pm:['letter','comment'],                 label:'Mektup',             key:'mektup',     bonus:-7 },
+  { pm:['published erratum','correction'],   label:'Düzeltme',           key:'duzeltme',   bonus:-12},
+  { pm:['journal article'],                  label:'Özgün araştırma',    key:'ozgun',      bonus:5  },
+];
+
+const FILTER_LABELS = {
+  all:'TÜMÜ', tier1:'TİER 1', tier2:'TİER 2', tier3:'TİER 3',
+  kilavuz:'KILAVUZ', meta:'META-ANALİZ', sistematik:'SİSTEMATİK DERLEME',
+  rkc:'RKÇ', klinik:'KLİNİK ÇALIŞMA', derleme:'DERLEME',
+  ozgun:'ÖZGÜN ARAŞTIRMA', olgu:'OLGU', editoryal:'EDİTORYAL', mektup:'MEKTUP',
+  gap:'📊 GAP ANALİZİ',
+};
+
+// ────────────────────────────────────────────────────────
+// STATE
+// ────────────────────────────────────────────────────────
+let allArticles = [], filteredArticles = [];
+let currentPage = 1, activeFilter = 'all';
+
+// ────────────────────────────────────────────────────────
+// HELPERS
+// ────────────────────────────────────────────────────────
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getJournalInfo(source) {
+  if (!source) return { tier:3, base:15 };
+  const sl = source.toLowerCase().trim();
+  // 1. kısaltma ile tam eşleşme (PubMed'in döndürdüğü abbr)
+  for (const j of JOURNALS) {
+    if (j.abbr && sl === j.abbr.toLowerCase()) return j;
+  }
+  // 2. tam ad ile tam eşleşme
+  for (const j of JOURNALS) {
+    if (sl === j.d.toLowerCase()) return j;
+  }
+  // 3. kısmi eşleşme (kısaltma içinde veya ad içinde)
+  for (const j of JOURNALS) {
+    if (j.abbr && sl.includes(j.abbr.toLowerCase())) return j;
+    const core = j.d.toLowerCase().split(/[:(,]/)[0].trim();
+    if (sl.includes(core) || core.includes(sl.split(/[:(,]/)[0].trim())) return j;
+  }
+  return { tier:3, base:15 };
+}
+
+function getTypeInfo(pubtypes) {
+  if (!pubtypes || !pubtypes.length) return TYPES.at(-1); // journal article fallback
+  const pts = pubtypes.map(p => p.toLowerCase());
+  for (const tc of TYPES) {
+    if (tc.pm.some(pm => pts.some(pt => pt.includes(pm)))) return tc;
+  }
+  return TYPES.at(-1);
+}
+
+function parsePubDate(item) {
+  const s = item.epubdate || item.pubdate || '';
+  if (!s) return new Date();
+  const parts = s.trim().split(/\s+/);
+  if (parts.length >= 3) return new Date(`${parts[1]} ${parts[2]}, ${parts[0]}`);
+  if (parts.length === 2) return new Date(`${parts[1]} 1, ${parts[0]}`);
+  return new Date(`Jan 1, ${parts[0]}`);
+}
+
+function relDate(item) {
+  const d = parsePubDate(item);
+  const diff = Math.floor((Date.now() - d) / 86400000);
+  if (diff <= 0) return 'Bugün';
+  if (diff === 1) return '1 gün önce';
+  if (diff < 7) return `${diff} gün önce`;
+  if (diff < 14) return '1 hafta önce';
+  return `${Math.floor(diff/7)} hafta önce`;
+}
+
+function fmtAuthors(authors) {
+  if (!authors || !authors.length) return '';
+  const names = authors.slice(0,2).map(a => a.name).filter(Boolean);
+  return names.join(', ') + (authors.length > 2 ? ' et al.' : '');
+}
+
+function pmLink(uid) {
+  return uid ? `https://pubmed.ncbi.nlm.nih.gov/${uid}/` : '#';
+}
+
+function scoreItem(item) {
+  const j = getJournalInfo(item.source);
+  const t = getTypeInfo(item.pubtype);
+  const d = parsePubDate(item);
+  const daysOld = Math.max(0, (Date.now() - d) / 86400000);
+  const rec = Math.max(0, Math.round(7 - daysOld));
+  return {
+    score: Math.max(1, j.base + t.bonus + rec),
+    tier: j.tier,
+    typeLabel: t.label,
+    typeKey: t.key,
+  };
+}
+
+// ────────────────────────────────────────────────────────
+// RENDER
+// ────────────────────────────────────────────────────────
+function tierBadge(tier) {
+  return `<span class="badge t${tier}">T${tier}</span>`;
+}
+
+function renderFeatured(articles) {
+  if (!articles.length) return;
+  const a = articles[0];
+  const link = pmLink(a.uid);
+  document.getElementById('featuredTitle').innerHTML =
+    `<a href="${link}" target="_blank" rel="noopener">${esc(a.title)}</a>`;
+  const authors = fmtAuthors(a.authors);
+  document.getElementById('featuredMeta').innerHTML = `
+    ${tierBadge(a._tier)}
+    <span class="badge btype">${esc(a._typeLabel)}</span>
+    <span style="color:var(--muted)">${esc(a.source||'')}</span>
+    <span class="dot">·</span>
+    <span style="color:var(--muted)">${relDate(a)}</span>
+    ${authors ? `<span class="dot">·</span><span style="color:var(--muted)">${esc(authors)}</span>` : ''}
+    <span class="art-score" style="margin-left:auto">↑${a._score}</span>
+  `;
+  document.getElementById('featuredBox').style.display = 'block';
+}
+
+function renderFilters() {
+  const keyCounts = {};
+  for (const a of allArticles) keyCounts[a._typeKey] = (keyCounts[a._typeKey]||0)+1;
+
+  const base = ['all','tier1','tier2','tier3'];
+  const typeOrder = ['kilavuz','meta','sistematik','rkc','klinik','derleme','ozgun','olgu','editoryal','mektup'];
+  const filters = [...base, ...typeOrder.filter(k => keyCounts[k]), 'gap'];
+
+  document.getElementById('filterRow').innerHTML = filters.map(f =>
+    `<button class="filter-btn ${f===activeFilter?'active':''} ${f==='gap'?'gap-btn':''}" onclick="setFilter('${f}')">
+      ${FILTER_LABELS[f]||f.toUpperCase()}
+    </button>`
+  ).join('');
+}
+
+function renderArticles() {
+  const start = (currentPage-1)*PER_PAGE;
+  const page = filteredArticles.slice(start, start+PER_PAGE);
+  const total = filteredArticles.length;
+
+  document.getElementById('artCount').innerHTML =
+    `<b>${total}</b> makale listeleniyor`;
+
+  if (!page.length) {
+    document.getElementById('artContainer').innerHTML =
+      '<div class="center-msg"><div>Bu filtrede makale bulunamadı.</div></div>';
+    document.getElementById('pagRow').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('artContainer').innerHTML =
+    `<div class="articles-list">${page.map((a,i) => renderArticle(a, start+i+1)).join('')}</div>`;
+
+  const totalPages = Math.ceil(total/PER_PAGE);
+  const pagRow = document.getElementById('pagRow');
+  if (totalPages > 1) {
+    pagRow.style.display = 'flex';
+    pagRow.innerHTML = `
+      <button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>← Önceki</button>
+      <span class="pg-info">${currentPage} / ${totalPages}</span>
+      <button class="pg-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Sonraki →</button>
+    `;
+  } else {
+    pagRow.style.display = 'none';
+  }
+}
+
+function renderArticle(a, num) {
+  const link = pmLink(a.uid);
+  const authors = fmtAuthors(a.authors);
+  return `
+    <div class="article-item">
+      <div class="art-num">${String(num).padStart(2,'0')}</div>
+      <div class="art-body">
+        <div class="art-title"><a href="${link}" target="_blank" rel="noopener">${esc(a.title)}</a></div>
+        <div class="art-meta">
+          ${tierBadge(a._tier)}
+          <span class="badge btype">${esc(a._typeLabel)}</span>
+          <span>${esc(a.source||'')}</span>
+          <span class="dot">·</span>
+          <span>${relDate(a)}</span>
+          ${authors ? `<span class="dot">·</span><span>${esc(authors)}</span>` : ''}
+        </div>
+      </div>
+      <div class="art-score">↑${a._score}</div>
+    </div>`;
+}
+
+function renderSidebar(articles) {
+  // Type stats
+  const typeCnt = {};
+  for (const a of articles) typeCnt[a._typeLabel] = (typeCnt[a._typeLabel]||0)+1;
+  const sorted = Object.entries(typeCnt).sort((x,y)=>y[1]-x[1]);
+  document.getElementById('typeStats').innerHTML = sorted.map(([label,cnt]) =>
+    `<div class="type-row">
+      <span class="type-row-name">${esc(label)}</span>
+      <span class="type-row-cnt">${cnt}</span>
+    </div>`
+  ).join('');
+
+  // Topic cloud
+  const stopW = new Set([
+    'and','or','the','in','of','a','an','to','for','with','by','from','on','at',
+    'is','are','was','were','be','been','as','after','before','during','vs',
+    'after','between','among','following','using','based','among','versus',
+    'without','within','through','into','their','this','that','these','those',
+    'has','have','had','not','but','its','than','more','also','both','each',
+    'about','which','when','there','under','over','than','such','other',
+  ]);
+
+  const wc = {};
+  for (const a of articles) {
+    for (const w of (a.title||'').split(/\W+/)) {
+      const c = w.toLowerCase();
+      if (c.length > 4 && !stopW.has(c) && !/^\d+$/.test(c)) {
+        wc[c] = (wc[c]||0)+1;
+      }
+    }
+  }
+  const top = Object.entries(wc).sort((a,b)=>b[1]-a[1]).slice(0,24).map(([w])=>w);
+  const cap = w => w.charAt(0).toUpperCase()+w.slice(1);
+  document.getElementById('topicCloud').innerHTML = top.map(w =>
+    `<span class="topic-tag">${cap(w)}</span>`
+  ).join('');
+}
+
+function renderLastUpdated() {
+  const now = new Date();
+  const s = now.toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('lastUpdated').innerHTML =
+    `<div class="live-dot"></div><span>Son güncelleme: ${s}</span>`;
+}
+
+// ────────────────────────────────────────────────────────
+// NAVIGATION
+// ────────────────────────────────────────────────────────
+function setFilter(key) {
+  activeFilter = key;
+  currentPage = 1;
+  const gapPanel  = document.getElementById('gapPanel');
+  const artBox    = document.getElementById('artContainer');
+  const pagRow    = document.getElementById('pagRow');
+  const artCount  = document.getElementById('artCount');
+
+  if (key === 'gap') {
+    artBox.style.display = 'none';
+    pagRow.style.display = 'none';
+    artCount.style.display = 'none';
+    gapPanel.style.display = 'block';
+    renderFilters();
+    runGapAnalysis();
+    return;
+  }
+
+  gapPanel.style.display = 'none';
+  artBox.style.display = 'block';
+  artCount.style.display = 'block';
+
+  if (key === 'all')      filteredArticles = [...allArticles];
+  else if (key==='tier1') filteredArticles = allArticles.filter(a=>a._tier===1);
+  else if (key==='tier2') filteredArticles = allArticles.filter(a=>a._tier===2);
+  else if (key==='tier3') filteredArticles = allArticles.filter(a=>a._tier===3);
+  else                    filteredArticles = allArticles.filter(a=>a._typeKey===key);
+  renderFilters();
+  renderArticles();
+}
+
+function goPage(n) {
+  currentPage = n;
+  renderArticles();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+// ────────────────────────────────────────────────────────
+// GAP ANALİZİ
+// ────────────────────────────────────────────────────────
+const GENERIC_MESH = new Set([
+  // Demografik
+  'Humans','Female','Male','Adult','Middle Aged','Aged','Animals',
+  'Young Adult','Infant','Child','Adolescent','Aged, 80 and over',
+  // Çalışma tipleri
+  'Retrospective Studies','Prospective Studies','Cohort Studies',
+  'Follow-Up Studies','Case-Control Studies','Cross-Sectional Studies',
+  'Randomized Controlled Trials as Topic','Clinical Trials as Topic',
+  'Multicenter Studies as Topic',
+  // İstatistik
+  'Survival Analysis','Logistic Models','Multivariate Analysis',
+  'ROC Curve','Kaplan-Meier Estimate','Propensity Score',
+  // Klinik genel
+  'Treatment Outcome','Risk Factors','Prognosis','Time Factors',
+  'Sensitivity and Specificity','Severity of Illness Index',
+  'Hospital Mortality','Length of Stay','Databases, Factual',
+  'Predictive Value of Tests','Biomarkers',
+  // Meslek grupları
+  'Surgeons','Physicians','Nurses','Emergency Medical Technicians',
+  'Health Personnel','Medical Staff, Hospital',
+  // Çok genel klinik
+  'Diagnosis, Differential','Comorbidity','Postoperative Complications',
+  'Hospitalization','Patient Readmission','Emergency Service, Hospital',
+  'Intensive Care Units','Critical Care','Emergency Medicine',
+]);
+
+let meshCache = null;
+
+async function fetchMeSH(ids) {
+  if (meshCache) return meshCache;
+  const CHUNK = 100;
+  const result = {};
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const chunk = ids.slice(i, i + CHUNK);
+    const body = new URLSearchParams({
+      db: 'pubmed', id: chunk.join(','), rettype: 'xml', retmode: 'xml',
+    });
+    const r = await fetch(`${BASE}efetch.fcgi`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    const xml = await r.text();
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    for (const art of doc.querySelectorAll('PubmedArticle')) {
+      const pmid = art.querySelector('MedlineCitation > PMID')?.textContent?.trim();
+      if (!pmid) continue;
+      const terms = [], major = [];
+      for (const h of art.querySelectorAll('MeshHeading')) {
+        const d = h.querySelector('DescriptorName');
+        if (!d) continue;
+        const name = d.textContent.trim();
+        terms.push(name);
+        if (d.getAttribute('MajorTopicYN') === 'Y') major.push(name);
+      }
+      result[pmid] = { terms, major };
+    }
+  }
+  meshCache = result;
+  return result;
+}
+
+function analyzeGaps(articles, meshData) {
+  // Konu → makale listesi haritası (önce major, yoksa tüm MeSH)
+  const topicMap = {};
+  for (const a of articles) {
+    const d = meshData[a.uid] || { terms:[], major:[] };
+    const terms = d.major.length ? d.major : d.terms;
+    for (const t of terms) {
+      if (GENERIC_MESH.has(t)) continue;
+      (topicMap[t] = topicMap[t]||[]).push(a);
+    }
+  }
+
+  // Metodolojik boşluklar: ≥3 makaleli konularda RKÇ/meta/sistematik yok
+  const methodGaps = [];
+  const sorted = Object.entries(topicMap)
+    .filter(([,arts]) => arts.length >= 3 && arts.length <= 30)
+    .sort((a,b) => b[1].length - a[1].length);
+
+  for (const [term, arts] of sorted) {
+    const types = arts.map(a => a._typeKey);
+    if (types.includes('meta') || types.includes('sistematik')) continue;
+    const hasRCT = types.includes('rkc') || types.includes('klinik');
+    const nObs   = types.filter(t => t === 'ozgun').length;
+    const nRev   = types.filter(t => ['derleme','editoryal','mektup'].includes(t)).length;
+
+    let gapType = null, suggestion = null;
+    if (!hasRCT && nObs >= 2) {
+      gapType   = `${nObs} gözlemsel çalışma var — RKÇ henüz yok`;
+      suggestion = `${term}: çok merkezli randomize kontrollü çalışma`;
+    } else if (nRev >= arts.length - 1 && !hasRCT) {
+      gapType   = `Çoğunlukla derleme/editöryal — primer çalışma eksik`;
+      suggestion = `${term}: prospektif klinik çalışma`;
+    } else if (arts.length >= 4 && !hasRCT) {
+      gapType   = `${arts.length} çalışma birikmiş — sistematik derleme yapılabilir`;
+      suggestion = `${term}: sistematik derleme ve meta-analiz`;
+    }
+    if (gapType) {
+      methodGaps.push({ term, count:arts.length, gapType, suggestion, arts });
+      if (methodGaps.length >= 6) break;
+    }
+  }
+
+  // Az çalışılan konular: haftada yalnızca 1 makale
+  const underrep = Object.entries(topicMap)
+    .filter(([,arts]) => arts.length === 1)
+    .sort((a,b) => b[1][0]._score - a[1][0]._score)
+    .slice(0, 9)
+    .map(([term, arts]) => ({ term, article: arts[0] }));
+
+  return { methodGaps, underrep };
+}
+
+function renderGaps({ methodGaps, underrep }) {
+  const total = allArticles.length;
+  const withMesh = Object.keys(meshCache||{}).length;
+
+  let html = `
+    <div class="gap-header">
+      <div class="gap-header-title">📊 Araştırma Boşlukları</div>
+      <div class="gap-header-sub">${total} makaleden ${withMesh} tanesi MeSH terimi içeriyor · Bu haftanın verisi</div>
+    </div>`;
+
+  // — Metodolojik boşluklar
+  html += `<div class="gap-section-label"><span style="color:var(--accent)">●</span> Metodolojik Boşluklar</div>
+           <div class="gap-section-desc">Birden fazla çalışma olan ama yüksek kanıt düzeyi eksik olan konular</div>`;
+
+  if (!methodGaps.length) {
+    html += `<div style="color:var(--muted);font-size:13px;padding:12px 0">Bu hafta belirgin metodolojik boşluk tespit edilmedi.</div>`;
+  } else {
+    html += methodGaps.map((g, i) => `
+      <div class="gap-card">
+        <div class="gap-card-head">
+          <span class="gap-num">${i+1}</span>
+          <span class="gap-term">${esc(g.term)}</span>
+          <span class="gap-cnt">${g.count} makale</span>
+        </div>
+        <div class="gap-type">⚠ ${esc(g.gapType)}</div>
+        <div class="gap-suggest">💡 Öneri: ${esc(g.suggestion)}</div>
+        <div class="gap-arts">
+          ${g.arts.slice(0,3).map(a =>
+            `<a class="gap-art-link" href="${pmLink(a.uid)}" target="_blank" rel="noopener">${esc(a.title.length>90?a.title.slice(0,90)+'…':a.title)}</a>`
+          ).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  // — Az çalışılan konular
+  html += `<div class="gap-section-label" style="margin-top:28px"><span style="color:var(--gold)">●</span> Az Çalışılan Konular</div>
+           <div class="gap-section-desc">Bu hafta yalnızca 1 makalede geçen MeSH konuları — araştırma potansiyeli yüksek</div>
+           <div class="underrep-grid">`;
+
+  html += underrep.map(({ term, article }) => `
+    <div class="underrep-card">
+      <div class="underrep-term">${esc(term)}</div>
+      <a class="underrep-art" href="${pmLink(article.uid)}" target="_blank" rel="noopener">
+        ${esc(article.title.length>70?article.title.slice(0,70)+'…':article.title)}
+      </a>
+      <div>${tierBadge(article._tier)}<span class="badge btype" style="font-size:10px">${esc(article._typeLabel)}</span></div>
+    </div>`).join('');
+
+  html += `</div>`;
+  document.getElementById('gapPanel').innerHTML = html;
+}
+
+async function runGapAnalysis() {
+  const panel = document.getElementById('gapPanel');
+  if (meshCache) { renderGaps(analyzeGaps(allArticles, meshCache)); return; }
+
+  panel.innerHTML = `<div class="center-msg">
+    <div class="spinner"></div>
+    <div>MeSH terimleri çekiliyor (${allArticles.length} makale)…<br>
+    <small style="opacity:.6">Bu işlem ~10–20 saniye sürebilir</small></div>
+  </div>`;
+
+  try {
+    const ids = allArticles.map(a=>a.uid).filter(Boolean);
+    await fetchMeSH(ids);
+    renderGaps(analyzeGaps(allArticles, meshCache));
+  } catch(err) {
+    panel.innerHTML = `<div class="error-box">Analiz sırasında hata oluştu.<br><small>${esc(err.message)}</small></div>`;
+  }
+}
+
+// ────────────────────────────────────────────────────────
+// FETCH
+// ────────────────────────────────────────────────────────
+async function pubmedPost(endpoint, params) {
+  const body = new URLSearchParams(params);
+  const r = await fetch(`${BASE}${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+async function load() {
+  try {
+    const now = new Date();
+    const ago = new Date(now); ago.setDate(ago.getDate()-7);
+    const fmt = d =>
+      `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+    const dateRange = `("${fmt(ago)}"[PDAT] : "${fmt(now)}"[PDAT])`;
+
+    const journalQ = JOURNALS.map(j => j.q).join(' OR ');
+    const term = `(${journalQ}) AND ${dateRange}`;
+
+    // 1. Search
+    const searchData = await pubmedPost('esearch.fcgi', {
+      db: 'pubmed', term, retmax: RETMAX, retmode: 'json', sort: 'relevance',
+    });
+    const ids = searchData.esearchresult?.idlist || [];
+
+    if (!ids.length) {
+      document.getElementById('artContainer').innerHTML =
+        '<div class="center-msg"><div>Bu tarih aralığında makale bulunamadı.</div></div>';
+      return;
+    }
+
+    // 2. Summaries in chunks of 200
+    let raw = [];
+    for (let i=0; i<ids.length; i+=200) {
+      const chunk = ids.slice(i, i+200);
+      const data = await pubmedPost('esummary.fcgi', {
+        db: 'pubmed', id: chunk.join(','), retmode: 'json',
+      });
+      for (const id of chunk) {
+        const item = data.result?.[id];
+        if (item?.title) raw.push(item);
+      }
+    }
+
+    // 3. Score & sort
+    allArticles = raw.map(item => {
+      const s = scoreItem(item);
+      return { ...item, _score:s.score, _tier:s.tier, _typeLabel:s.typeLabel, _typeKey:s.typeKey };
+    }).sort((a,b) => b._score - a._score);
+
+    filteredArticles = [...allArticles];
+
+    // 4. Render
+    renderFeatured(allArticles);
+    renderFilters();
+    renderArticles();
+    renderSidebar(allArticles);
+    renderLastUpdated();
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('artContainer').innerHTML = `
+      <div class="error-box">
+        <strong>Bağlantı hatası</strong><br>
+        PubMed API'sine ulaşılamıyor.<br>
+        İnternet bağlantınızı kontrol edip sayfayı yenileyin.<br><br>
+        <small style="opacity:.6">${esc(err.message)}</small>
+      </div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>
