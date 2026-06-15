@@ -331,6 +331,14 @@
     .underrep-art { font-size: 11px; color: var(--muted); text-decoration: none; display: block; line-height: 1.4; margin-bottom: 6px; }
     .underrep-art:hover { color: var(--tier1); }
 
+    .topic-tag.active { border-color: var(--tier1); color: var(--tier1); background: #eff6ff; font-weight: 600; }
+    .pubmed-link { font-size: 11px; color: var(--tier1); text-decoration: none; border: 1px solid rgba(29,78,216,0.3); padding: 1px 7px; border-radius: 4px; white-space: nowrap; margin-left: auto; }
+    .pubmed-link:hover { background: #eff6ff; border-color: var(--tier1); }
+    .topic-chip { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; background:#eff6ff; border:1.5px solid var(--tier1); border-radius:16px; font-size:12px; color:var(--tier1); margin-bottom:10px; }
+    .topic-chip b { font-weight:600; }
+    .topic-chip-x { cursor:pointer; opacity:.6; font-size:16px; line-height:1; }
+    .topic-chip-x:hover { opacity:1; }
+
     @media (max-width: 800px) {
       .container { grid-template-columns: 1fr; padding: 0 16px; }
       .sidebar { order: -1; }
@@ -571,7 +579,7 @@ const FILTER_LABELS = {
 // STATE
 // ────────────────────────────────────────────────────────
 let allArticles = [], filteredArticles = [];
-let currentPage = 1, activeFilter = 'all';
+let currentPage = 1, activeFilter = 'all', topicFilter = null;
 
 // ────────────────────────────────────────────────────────
 // HELPERS
@@ -741,6 +749,7 @@ function renderArticle(a, num) {
           <span class="dot">·</span>
           <span>${relDate(a)}</span>
           ${authors ? `<span class="dot">·</span><span>${esc(authors)}</span>` : ''}
+          <a href="${link}" target="_blank" rel="noopener" class="pubmed-link">PubMed ↗</a>
         </div>
       </div>
       <div class="art-score">↑${a._score}</div>
@@ -781,7 +790,7 @@ function renderSidebar(articles) {
   const top = Object.entries(wc).sort((a,b)=>b[1]-a[1]).slice(0,24).map(([w])=>w);
   const cap = w => w.charAt(0).toUpperCase()+w.slice(1);
   document.getElementById('topicCloud').innerHTML = top.map(w =>
-    `<span class="topic-tag">${cap(w)}</span>`
+    `<span class="topic-tag${topicFilter===w?' active':''}" onclick="setTopicFilter('${w}')">${cap(w)}</span>`
   ).join('');
 }
 
@@ -795,6 +804,40 @@ function renderLastUpdated() {
 // ────────────────────────────────────────────────────────
 // NAVIGATION
 // ────────────────────────────────────────────────────────
+function applyFilters() {
+  let base;
+  if (activeFilter === 'all')      base = [...allArticles];
+  else if (activeFilter === 'tier1') base = allArticles.filter(a => a._tier===1);
+  else if (activeFilter === 'tier2') base = allArticles.filter(a => a._tier===2);
+  else if (activeFilter === 'tier3') base = allArticles.filter(a => a._tier===3);
+  else                               base = allArticles.filter(a => a._typeKey===activeFilter);
+  if (topicFilter) {
+    const tf = topicFilter.toLowerCase();
+    base = base.filter(a => (a.title||'').toLowerCase().includes(tf));
+  }
+  filteredArticles = base;
+  renderTopicChip();
+  renderArticles();
+}
+
+function renderTopicChip() {
+  const old = document.getElementById('topicChip');
+  if (old) old.remove();
+  if (!topicFilter) return;
+  const chip = document.createElement('div');
+  chip.id = 'topicChip';
+  chip.className = 'topic-chip';
+  chip.innerHTML = `Konu: <b>${topicFilter}</b> <span class="topic-chip-x" onclick="setTopicFilter('${topicFilter}')">×</span>`;
+  document.getElementById('artCount').before(chip);
+}
+
+function setTopicFilter(word) {
+  topicFilter = topicFilter === word ? null : word;
+  currentPage = 1;
+  applyFilters();
+  renderSidebar(allArticles);
+}
+
 function setFilter(key) {
   activeFilter = key;
   currentPage = 1;
@@ -816,14 +859,8 @@ function setFilter(key) {
   gapPanel.style.display = 'none';
   artBox.style.display = 'block';
   artCount.style.display = 'block';
-
-  if (key === 'all')      filteredArticles = [...allArticles];
-  else if (key==='tier1') filteredArticles = allArticles.filter(a=>a._tier===1);
-  else if (key==='tier2') filteredArticles = allArticles.filter(a=>a._tier===2);
-  else if (key==='tier3') filteredArticles = allArticles.filter(a=>a._tier===3);
-  else                    filteredArticles = allArticles.filter(a=>a._typeKey===key);
   renderFilters();
-  renderArticles();
+  applyFilters();
 }
 
 function goPage(n) {
