@@ -579,7 +579,7 @@ const FILTER_LABELS = {
 // STATE
 // ────────────────────────────────────────────────────────
 let allArticles = [], filteredArticles = [];
-let currentPage = 1, activeFilter = 'all', topicFilter = null;
+let currentPage = 1, activeFilter = 'all', topicFilter = new Set();
 
 // ────────────────────────────────────────────────────────
 // HELPERS
@@ -670,7 +670,9 @@ function tierBadge(tier) {
 
 function renderFeatured(articles) {
   if (!articles.length) return;
-  const a = articles[0];
+  // Kılavuz varsa onu öne çıkar, yoksa en yüksek puanlı makale
+  const guidelines = articles.filter(a => a._typeKey === 'kilavuz');
+  const a = guidelines.length > 0 ? guidelines[0] : articles[0];
   const link = pmLink(a.uid);
   document.getElementById('featuredTitle').innerHTML =
     `<a href="${link}" target="_blank" rel="noopener">${esc(a.title)}</a>`;
@@ -692,8 +694,12 @@ function renderFilters() {
   for (const a of allArticles) keyCounts[a._typeKey] = (keyCounts[a._typeKey]||0)+1;
 
   const base = ['all','tier1','tier2','tier3'];
-  const typeOrder = ['kilavuz','meta','sistematik','rkc','klinik','derleme','ozgun','olgu','editoryal','mektup'];
-  const filters = [...base, ...typeOrder.filter(k => keyCounts[k]), 'gap'];
+  const typeOrder = ['kilavuz','meta','rkc','klinik','derleme','ozgun','olgu','editoryal','mektup'];
+  const filters = [...base, ...typeOrder.filter(k => {
+    if (k === 'kilavuz') return true;
+    if (k === 'derleme') return keyCounts['derleme'] || keyCounts['sistematik'];
+    return keyCounts[k];
+  }), 'gap'];
 
   document.getElementById('filterRow').innerHTML = filters.map(f =>
     `<button class="filter-btn ${f===activeFilter?'active':''} ${f==='gap'?'gap-btn':''}" onclick="setFilter('${f}')">
@@ -768,37 +774,56 @@ function renderSidebar(articles) {
     </div>`
   ).join('');
 
-  // Topic cloud
-  const stopW = new Set([
-    'and','or','the','in','of','a','an','to','for','with','by','from','on','at',
-    'is','are','was','were','be','been','as','after','before','during','vs',
-    'after','between','among','following','using','based','among','versus',
-    'without','within','through','into','their','this','that','these','those',
-    'has','have','had','not','but','its','than','more','also','both','each',
-    'about','which','when','there','under','over','than','such','other',
-  ]);
+  // Topic cloud — MeSH varsa MeSH, yoksa başlık kelimeleri
+  const cap = w => w.charAt(0).toUpperCase()+w.slice(1);
+  const maxHint = topicFilter.size >= 5
+    ? '<div style="font-size:11px;color:var(--muted);width:100%;margin-top:6px;">En fazla 5 konu seçilebilir.</div>' : '';
 
-  const wc = {};
-  for (const a of articles) {
-    for (const w of (a.title||'').split(/\W+/)) {
-      const c = w.toLowerCase();
-      if (c.length > 4 && !stopW.has(c) && !/^\d+$/.test(c)) {
-        wc[c] = (wc[c]||0)+1;
+  if (meshCache && Object.keys(meshCache).length > 0) {
+    const termCnt = {};
+    for (const a of articles) {
+      const d = meshCache[a.uid] || { terms:[], major:[] };
+      const terms = d.major.length ? d.major : d.terms;
+      for (const t of terms) {
+        if (!GENERIC_MESH.has(t)) termCnt[t] = (termCnt[t]||0)+1;
       }
     }
+    const top = Object.entries(termCnt).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([w])=>w);
+    document.getElementById('topicCloud').innerHTML =
+      top.map(w => `<span class="topic-tag${topicFilter.has(w)?' active':''}" onclick="setTopicFilter('${w.replace(/'/g,"\\'")}')">${esc(w)}</span>`).join('') + maxHint;
+  } else {
+    const stopW = new Set([
+      'and','or','the','in','of','a','an','to','for','with','by','from','on','at',
+      'is','are','was','were','be','been','as','after','before','during','vs',
+      'between','among','following','using','based','versus','without','within',
+      'through','into','their','this','that','these','those','has','have','had',
+      'not','but','its','than','more','also','both','each','about','which','when',
+      'there','under','over','such','other','study','trial','group','effect',
+      'patient','patients','results','compared','associated','randomized',
+    ]);
+    const wc = {};
+    for (const a of articles) {
+      for (const w of (a.title||'').split(/\W+/)) {
+        const c = w.toLowerCase();
+        if (c.length > 4 && !stopW.has(c) && !/^\d+$/.test(c)) wc[c] = (wc[c]||0)+1;
+      }
+    }
+    const top = Object.entries(wc).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([w])=>w);
+    document.getElementById('topicCloud').innerHTML =
+      top.map(w => `<span class="topic-tag${topicFilter.has(w)?' active':''}" onclick="setTopicFilter('${w}')">${cap(w)}</span>`).join('') +
+      '<div style="font-size:11px;color:var(--muted);width:100%;margin-top:6px;opacity:.7">⟳ MeSH anahtar kelimeleri yükleniyor…</div>' + maxHint;
   }
-  const top = Object.entries(wc).sort((a,b)=>b[1]-a[1]).slice(0,24).map(([w])=>w);
-  const cap = w => w.charAt(0).toUpperCase()+w.slice(1);
-  document.getElementById('topicCloud').innerHTML = top.map(w =>
-    `<span class="topic-tag${topicFilter===w?' active':''}" onclick="setTopicFilter('${w}')">${cap(w)}</span>`
-  ).join('');
 }
 
 function renderLastUpdated() {
   const now = new Date();
-  const s = now.toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' });
+  const dateStr = now.toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' });
+  const timeStr = now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
   document.getElementById('lastUpdated').innerHTML =
-    `<div class="live-dot"></div><span>Son güncelleme: ${s}</span>`;
+    `<div class="live-dot"></div>
+     <span>${dateStr}, ${timeStr}</span>
+     <span style="color:var(--border)">·</span>
+     <span style="font-size:11px" title="Sayfayı her yenilediğinizde PubMed'den son 7 günün makaleleri otomatik çekilir. Veriler canlı, herhangi bir önbellek kullanılmaz.">Son 7 gün · PubMed</span>`;
 }
 
 // ────────────────────────────────────────────────────────
@@ -810,10 +835,19 @@ function applyFilters() {
   else if (activeFilter === 'tier1') base = allArticles.filter(a => a._tier===1);
   else if (activeFilter === 'tier2') base = allArticles.filter(a => a._tier===2);
   else if (activeFilter === 'tier3') base = allArticles.filter(a => a._tier===3);
+  else if (activeFilter === 'derleme') base = allArticles.filter(a => a._typeKey === 'derleme' || a._typeKey === 'sistematik');
   else                               base = allArticles.filter(a => a._typeKey===activeFilter);
-  if (topicFilter) {
-    const tf = topicFilter.toLowerCase();
-    base = base.filter(a => (a.title||'').toLowerCase().includes(tf));
+  if (topicFilter.size > 0) {
+    base = base.filter(a => {
+      for (const tf of topicFilter) {
+        if (meshCache && meshCache[a.uid]) {
+          if (meshCache[a.uid].terms.includes(tf)) return true;
+        } else {
+          if ((a.title||'').toLowerCase().includes(tf.toLowerCase())) return true;
+        }
+      }
+      return false;
+    });
   }
   filteredArticles = base;
   renderTopicChip();
@@ -823,16 +857,33 @@ function applyFilters() {
 function renderTopicChip() {
   const old = document.getElementById('topicChip');
   if (old) old.remove();
-  if (!topicFilter) return;
-  const chip = document.createElement('div');
-  chip.id = 'topicChip';
-  chip.className = 'topic-chip';
-  chip.innerHTML = `Konu: <b>${topicFilter}</b> <span class="topic-chip-x" onclick="setTopicFilter('${topicFilter}')">×</span>`;
-  document.getElementById('artCount').before(chip);
+  if (topicFilter.size === 0) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'topicChip';
+  wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center;';
+  const chips = [...topicFilter].map(w =>
+    `<span class="topic-chip"><b>${esc(w)}</b> <span class="topic-chip-x" onclick="setTopicFilter(this.dataset.w)" data-w="${w.replace(/"/g,'&quot;')}">×</span></span>`
+  ).join('');
+  const clearAll = topicFilter.size > 1
+    ? `<span style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;" onclick="clearTopicFilters()">tümünü temizle</span>`
+    : '';
+  wrap.innerHTML = chips + clearAll;
+  document.getElementById('artCount').before(wrap);
+}
+
+function clearTopicFilters() {
+  topicFilter.clear();
+  currentPage = 1;
+  applyFilters();
+  renderSidebar(allArticles);
 }
 
 function setTopicFilter(word) {
-  topicFilter = topicFilter === word ? null : word;
+  if (topicFilter.has(word)) {
+    topicFilter.delete(word);
+  } else if (topicFilter.size < 5) {
+    topicFilter.add(word);
+  }
   currentPage = 1;
   applyFilters();
   renderSidebar(allArticles);
@@ -1038,6 +1089,16 @@ function renderGaps({ methodGaps, underrep }) {
   document.getElementById('gapPanel').innerHTML = html;
 }
 
+async function fetchMeSHBackground(articles) {
+  if (meshCache) return;
+  try {
+    const ids = articles.map(a=>a.uid).filter(Boolean);
+    await fetchMeSH(ids);
+    if (topicFilter.size > 0) topicFilter.clear();
+    renderSidebar(articles);
+  } catch(e) { /* sessiz hata */ }
+}
+
 async function runGapAnalysis() {
   const panel = document.getElementById('gapPanel');
   if (meshCache) { renderGaps(analyzeGaps(allArticles, meshCache)); return; }
@@ -1121,6 +1182,7 @@ async function load() {
     renderArticles();
     renderSidebar(allArticles);
     renderLastUpdated();
+    fetchMeSHBackground(allArticles);
 
   } catch (err) {
     console.error(err);
