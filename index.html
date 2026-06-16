@@ -305,6 +305,9 @@
     .filter-btn.gap-btn { border-color: var(--score); color: var(--score); }
     .filter-btn.gap-btn:hover,
     .filter-btn.gap-btn.active { background: var(--score); border-color: var(--score); color: #fff; }
+    .filter-btn.scopus-btn { border-color: #e8590c; color: #e8590c; }
+    .filter-btn.scopus-btn:hover,
+    .filter-btn.scopus-btn.active { background: #e8590c; border-color: #e8590c; color: #fff; }
 
     #gapPanel { padding-bottom: 32px; }
     .gap-header { margin-bottom: 20px; }
@@ -656,6 +659,7 @@ const FILTER_LABELS = {
   rkc:'RKÇ', klinik:'KLİNİK ÇALIŞMA', derleme:'DERLEME',
   ozgun:'ÖZGÜN ARAŞTIRMA', olgu:'OLGU', editoryal:'EDİTORYAL', mektup:'MEKTUP',
   gap:'📊 GAP ANALİZİ',
+  scopus:'🔍 SCOPUS',
 };
 
 // ────────────────────────────────────────────────────────
@@ -821,14 +825,15 @@ function renderFilters() {
 
   const base = ['all','tier1','tier2','tier3'];
   const typeOrder = ['kilavuz','meta','rkc','klinik','derleme','ozgun','olgu','editoryal','mektup'];
+  const hasScopus = scopusOnlyArticles.length > 0 || allArticles.some(a => a._inScopus);
   const filters = [...base, ...typeOrder.filter(k => {
     if (k === 'kilavuz') return true;
     if (k === 'derleme') return keyCounts['derleme'] || keyCounts['sistematik'];
     return keyCounts[k];
-  }), 'gap'];
+  }), 'gap', ...(hasScopus ? ['scopus'] : [])];
 
   document.getElementById('filterRow').innerHTML = filters.map(f =>
-    `<button class="filter-btn ${f===activeFilter?'active':''} ${f==='gap'?'gap-btn':''}" onclick="setFilter('${f}')">
+    `<button class="filter-btn ${f===activeFilter?'active':''} ${f==='gap'?'gap-btn':''} ${f==='scopus'?'scopus-btn':''}" onclick="setFilter('${f}')">
       ${FILTER_LABELS[f]||f.toUpperCase()}
     </button>`
   ).join('');
@@ -1029,14 +1034,27 @@ function setFilter(key) {
     pagRow.style.display = 'none';
     artCount.style.display = 'none';
     gapPanel.style.display = 'block';
+    document.getElementById('scopusOnlyPanel').style.display = 'none';
     renderFilters();
     runGapAnalysis();
+    return;
+  }
+
+  if (key === 'scopus') {
+    gapPanel.style.display = 'none';
+    pagRow.style.display = 'none';
+    artCount.style.display = 'block';
+    artBox.style.display = 'block';
+    document.getElementById('scopusOnlyPanel').style.display = 'none';
+    renderFilters();
+    renderScopusTab();
     return;
   }
 
   gapPanel.style.display = 'none';
   artBox.style.display = 'block';
   artCount.style.display = 'block';
+  document.getElementById('scopusOnlyPanel').style.display = 'none';
   renderFilters();
   applyFilters();
 }
@@ -1434,8 +1452,79 @@ function mergeScopus(entries) {
   }
 
   // Re-render
+  renderFilters(); // SCOPUS tab'ı göster
   renderArticles();
   renderScopusOnly();
+}
+
+function renderScopusTab() {
+  const inBoth  = allArticles.filter(a => a._inScopus);
+  const onlySC  = scopusOnlyArticles;
+  const total   = inBoth.length + onlySC.length;
+
+  document.getElementById('artCount').innerHTML =
+    `<b>${total}</b> Scopus makalesi · <span style="color:#e8590c"><b>${inBoth.length}</b> her ikisinde</span> · <b>${onlySC.length}</b> yalnızca Scopus'ta`;
+
+  if (!total) {
+    document.getElementById('artContainer').innerHTML =
+      '<div class="center-msg"><div>Henüz Scopus verisi yüklenmedi. Sidebar\'dan "Getir &amp; Birleştir" butonuna bas.</div></div>';
+    return;
+  }
+
+  let html = '<div class="articles-list">';
+
+  if (inBoth.length) {
+    html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);padding:8px 0 6px">Her İki Veritabanında</div>`;
+    inBoth.forEach((a, i) => {
+      const link    = pmLink(a.uid);
+      const authors = fmtAuthors(a.authors);
+      html += `
+        <div class="article-item tier-${a._tier}">
+          <div class="art-num">${i+1}</div>
+          <div class="art-body">
+            <div class="art-title"><a href="${link}" target="_blank" rel="noopener">${esc(a.title)}</a></div>
+            <div class="art-meta">
+              ${tierBadge(a._tier)}
+              <span class="badge btype">${esc(a._typeLabel)}</span>
+              <span class="badge" style="background:#e8590c;color:#fff;font-size:10px">+SC</span>
+              <span>${esc(a.source||'')}</span>
+              <span class="dot">·</span><span>${relDate(a)}</span>
+              ${authors ? `<span class="dot">·</span><span>${esc(authors)}</span>` : ''}
+              <span class="dot">·</span><span style="color:#e8590c;font-size:11px">📊 ${esc(a._scopusCited||'0')}</span>
+              <a href="${link}" target="_blank" rel="noopener" class="pubmed-link">PubMed ↗</a>
+            </div>
+          </div>
+          <div class="art-score">↑${a._score}</div>
+        </div>`;
+    });
+  }
+
+  if (onlySC.length) {
+    html += `<div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#e8590c;padding:16px 0 6px">Yalnızca Scopus'ta</div>`;
+    onlySC.forEach((e, i) => {
+      const doi   = e['prism:doi'];
+      const link  = doi ? `https://doi.org/${doi}` : '#';
+      const author= e['dc:creator'] || '';
+      html += `
+        <div class="article-item">
+          <div class="art-num">${i+1}</div>
+          <div class="art-body">
+            <div class="art-title"><a href="${esc(link)}" target="_blank" rel="noopener">${esc(e['dc:title']||'')}</a></div>
+            <div class="art-meta">
+              <span class="badge" style="background:#e8590c;color:#fff;font-size:10px">SCOPUS</span>
+              <span class="badge btype">${esc(e['subtypeDescription']||'')}</span>
+              <span>${esc(e['prism:publicationName']||'')}</span>
+              <span class="dot">·</span><span>${(e['prism:coverDate']||'').slice(0,10)}</span>
+              ${author ? `<span class="dot">·</span><span style="font-size:11px">${esc(author)}</span>` : ''}
+            </div>
+          </div>
+          <div style="font-size:12px;color:#e8590c;white-space:nowrap;align-self:center;font-weight:600">📊 ${esc(e['citedby-count']||'0')}</div>
+        </div>`;
+    });
+  }
+
+  html += '</div>';
+  document.getElementById('artContainer').innerHTML = html;
 }
 
 function renderScopusOnly() {
@@ -1499,6 +1588,9 @@ async function loadScopus() {
     'TITLE-ABS-KEY("resuscitation")',
     'TITLE-ABS-KEY("cardiac arrest")',
     'TITLE-ABS-KEY("prehospital")',
+    'TITLE-ABS-KEY("sepsis")',
+    'TITLE-ABS-KEY("pulmonary embolism")',
+    'TITLE-ABS-KEY("mechanical ventilation")',
   ].join(' OR ');
 
   const url = new URL('https://api.elsevier.com/content/search/scopus');
