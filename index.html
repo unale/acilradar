@@ -6,16 +6,16 @@
   <title>AcilRadar — Acil Tıp ve Kritik Bakım Makale Radarı</title>
   <style>
     :root {
-      --bg: #eef2f7;
+      --bg: #f5f7fa;
       --bg-card: #ffffff;
-      --bg-hover: #f5f8ff;
-      --border: #dde3ed;
-      --text: #18212e;
-      --muted: #5a6a7e;
-      --accent: #e53935;
-      --tier1: #1d4ed8;
+      --bg-hover: #f8faff;
+      --border: #e4e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #e63946;
+      --tier1: #2563eb;
       --tier2: #7c3aed;
-      --tier3: #64748b;
+      --tier3: #94a3b8;
       --score: #059669;
       --gold: #d97706;
       --tag: #f1f5f9;
@@ -35,10 +35,9 @@
     /* ── HEADER ── */
     header {
       background: #fff;
-      border-top: 3px solid var(--accent);
       border-bottom: 1px solid var(--border);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-      padding: 12px 24px;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+      padding: 14px 24px;
       position: sticky;
       top: 0;
       z-index: 100;
@@ -56,7 +55,7 @@
       border-radius: 9px;
       display: flex; align-items: center; justify-content: center;
     }
-    .logo-name { font-size: 20px; font-weight: 700; letter-spacing: 2px; color: var(--text); }
+    .logo-name { font-size: 20px; font-weight: 700; letter-spacing: 1.5px; color: var(--text); }
     .logo-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
     .header-right { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
     .live-dot {
@@ -81,13 +80,13 @@
     /* ── HAFTANIN VİTRİNİ ── */
     .vitrin { margin-bottom: 16px; }
     .vitrin-top {
-      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+      background: linear-gradient(135deg, #fffef8 0%, #fffbee 100%);
       border: 1px solid #fde68a;
       border-left: 4px solid var(--gold);
       border-radius: 10px;
-      padding: 18px 20px;
+      padding: 20px 22px;
       margin-bottom: 10px;
-      box-shadow: 0 2px 8px rgba(217,119,6,0.1);
+      box-shadow: 0 2px 10px rgba(217,119,6,0.08);
       position: relative;
     }
     .vitrin-rank {
@@ -149,7 +148,7 @@
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
     .filter-btn:hover { border-color: var(--tier1); color: var(--tier1); background: #eff6ff; }
-    .filter-btn.active { background: var(--tier1); border-color: var(--tier1); color: #fff; box-shadow: 0 2px 6px rgba(29,78,216,0.25); }
+    .filter-btn.active { background: var(--tier1); border-color: var(--tier1); color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,0.28); }
 
     /* ── COUNT ── */
     .article-count { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
@@ -160,19 +159,19 @@
     .article-item {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 9px;
-      padding: 13px 16px;
+      border-radius: 8px;
+      padding: 14px 16px;
       display: grid;
       grid-template-columns: 30px 1fr auto;
       gap: 12px;
       align-items: start;
-      transition: box-shadow 0.15s, transform 0.1s;
+      transition: box-shadow 0.2s, border-color 0.2s;
       cursor: default;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
     .article-item:hover {
-      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
-      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.09);
+      border-color: #d0d7e8;
     }
     .article-item.tier-1 { border-left: 3px solid var(--tier1); }
     .article-item.tier-2 { border-left: 3px solid var(--tier2); }
@@ -404,8 +403,8 @@
           <circle cx="25" cy="11" r="4" stroke="white" stroke-width="0.6" opacity="0.4"/>
           <defs>
             <linearGradient id="logoGrad" x1="0" y1="0" x2="38" y2="38">
-              <stop offset="0%" stop-color="#e53935"/>
-              <stop offset="100%" stop-color="#c62828"/>
+              <stop offset="0%" stop-color="#e63946"/>
+              <stop offset="100%" stop-color="#b91c2c"/>
             </linearGradient>
           </defs>
         </svg>
@@ -461,6 +460,8 @@
 
     <div class="pagination" id="pagRow" style="display:none"></div>
     <div id="gapPanel" style="display:none"></div>
+
+    <div id="scopusOnlyPanel" style="display:none;margin-top:28px;padding-top:24px;border-top:1px solid var(--border)"></div>
   </div>
 
   <aside class="sidebar">
@@ -524,6 +525,20 @@
       <p class="how-text" style="margin-top:10px;font-size:11px;opacity:0.6;">
         Puan yalnızca sıralama içindir; klinik önem yargısı değildir.
       </p>
+    </div>
+    <div class="widget">
+      <div class="widget-title">Scopus <span class="badge" style="background:#e8590c;color:#fff;font-size:9px;vertical-align:middle">BETA</span></div>
+      <input id="scopusKeyInput" type="password" placeholder="API Key…"
+        style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;outline:none;color:var(--text);background:var(--bg-card);margin-bottom:8px;box-sizing:border-box"
+        autocomplete="off"
+        onfocus="this.style.borderColor='var(--tier1)'"
+        onblur="this.style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')loadScopus()"/>
+      <button onclick="loadScopus()"
+        style="width:100%;padding:7px;background:var(--tier1);color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600">
+        Getir &amp; Birleştir
+      </button>
+      <div id="scopusStatus" style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6"></div>
     </div>
   </aside>
 </div>
@@ -646,7 +661,7 @@ const FILTER_LABELS = {
 // ────────────────────────────────────────────────────────
 // STATE
 // ────────────────────────────────────────────────────────
-let allArticles = [], filteredArticles = [];
+let allArticles = [], filteredArticles = [], scopusOnlyArticles = [];
 let currentPage = 1, activeFilter = 'all', topicFilter = new Set();
 
 // ────────────────────────────────────────────────────────
@@ -866,6 +881,7 @@ function renderArticle(a, num) {
           <span class="dot">·</span>
           <span>${relDate(a)}</span>
           ${authors ? `<span class="dot">·</span><span>${esc(authors)}</span>` : ''}
+          ${a._inScopus ? `<span class="badge" style="background:#e8590c;color:#fff;font-size:10px;letter-spacing:0.3px">+SC</span>` : ''}
           <a href="${link}" target="_blank" rel="noopener" class="pubmed-link">PubMed ↗</a>
         </div>
       </div>
@@ -1338,7 +1354,8 @@ async function load() {
     // 3. Score & sort
     allArticles = raw.map(item => {
       const s = scoreItem(item);
-      return { ...item, _score:s.score, _tier:s.tier, _typeLabel:s.typeLabel, _typeKey:s.typeKey };
+      const doi = ((item.articleids||[]).find(x=>x.idtype==='doi')?.value||'').toLowerCase();
+      return { ...item, doi, _score:s.score, _tier:s.tier, _typeLabel:s.typeLabel, _typeKey:s.typeKey };
     }).sort((a,b) => b._score - a._score);
 
     filteredArticles = [...allArticles];
@@ -1350,6 +1367,14 @@ async function load() {
     renderSidebar(allArticles);
     renderLastUpdated();
     fetchMeSHBackground(allArticles);
+
+    // Kayıtlı Scopus key varsa otomatik getir
+    const savedKey = localStorage.getItem('scopusApiKey');
+    if (savedKey) {
+      const inp = document.getElementById('scopusKeyInput');
+      if (inp) inp.value = savedKey;
+      loadScopus();
+    }
 
   } catch (err) {
     console.error(err);
@@ -1364,6 +1389,151 @@ async function load() {
 }
 
 load();
+
+
+// ────────────────────────────────────────────────────────
+// SCOPUS
+// ────────────────────────────────────────────────────────
+function normTitle(t) {
+  return (t||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,60);
+}
+
+function mergeScopus(entries) {
+  // Build lookup maps from PubMed articles
+  const doiMap   = new Map();
+  const titleMap = new Map();
+  allArticles.forEach(a => {
+    if (a.doi) doiMap.set(a.doi, a);
+    const tk = normTitle(a.title);
+    if (tk) titleMap.set(tk, a);
+  });
+
+  // Reset previous Scopus state
+  allArticles.forEach(a => { delete a._inScopus; delete a._scopusCited; });
+  scopusOnlyArticles = [];
+
+  let matched = 0;
+  entries.forEach(e => {
+    const doi   = (e['prism:doi']||'').toLowerCase();
+    const tk    = normTitle(e['dc:title']||'');
+    const pmArt = (doi && doiMap.get(doi)) || (tk && titleMap.get(tk));
+    if (pmArt) {
+      pmArt._inScopus    = true;
+      pmArt._scopusCited = e['citedby-count'] || '0';
+      matched++;
+    } else {
+      scopusOnlyArticles.push(e);
+    }
+  });
+
+  // Update status
+  const status = document.getElementById('scopusStatus');
+  if (status) {
+    status.innerHTML = `✅ <b>${matched}</b> makale her ikisinde de<br>
+      <span style="color:#e8590c">●</span> <b>${scopusOnlyArticles.length}</b> yalnızca Scopus'ta`;
+  }
+
+  // Re-render
+  renderArticles();
+  renderScopusOnly();
+}
+
+function renderScopusOnly() {
+  const panel = document.getElementById('scopusOnlyPanel');
+  if (!panel) return;
+  if (!scopusOnlyArticles.length) { panel.style.display = 'none'; return; }
+
+  panel.style.display = 'block';
+  let html = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span style="font-size:12px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase">Yalnızca Scopus'ta</span>
+      <span class="badge" style="background:#e8590c;color:#fff;font-size:10px">${scopusOnlyArticles.length}</span>
+    </div>
+    <div class="articles-list">`;
+
+  scopusOnlyArticles.forEach((e, i) => {
+    const title  = e['dc:title'] || 'Başlıksız';
+    const author = e['dc:creator'] || '';
+    const journal= e['prism:publicationName'] || '';
+    const date   = (e['prism:coverDate']||'').slice(0,10);
+    const type   = e['subtypeDescription'] || '';
+    const cited  = e['citedby-count'] || '0';
+    const doi    = e['prism:doi'];
+    const link   = doi ? `https://doi.org/${doi}` : '#';
+
+    html += `
+      <div class="article-item">
+        <div class="art-num">${i+1}</div>
+        <div class="art-body">
+          <div class="art-title"><a href="${esc(link)}" target="_blank" rel="noopener">${esc(title)}</a></div>
+          <div class="art-meta">
+            <span class="badge" style="background:#e8590c;color:#fff;font-size:10px">SCOPUS</span>
+            <span class="badge btype">${esc(type)}</span>
+            <span>${esc(journal)}</span>
+            <span class="dot">·</span>
+            <span>${esc(date)}</span>
+            ${author ? `<span class="dot">·</span><span style="font-size:11px">${esc(author)}</span>` : ''}
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);white-space:nowrap;align-self:center">📊 ${esc(cited)}</div>
+      </div>`;
+  });
+
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+async function loadScopus() {
+  const key = document.getElementById('scopusKeyInput').value.trim();
+  if (!key) { alert('Lütfen Scopus API key girin.'); return; }
+  localStorage.setItem('scopusApiKey', key);
+
+  const status = document.getElementById('scopusStatus');
+  if (status) status.innerHTML = '<span style="color:var(--tier1)">Yükleniyor…</span>';
+
+  const query = [
+    'TITLE-ABS-KEY("emergency medicine")',
+    'TITLE-ABS-KEY("emergency department")',
+    'TITLE-ABS-KEY("critical care")',
+    'TITLE-ABS-KEY("intensive care unit")',
+    'TITLE-ABS-KEY("resuscitation")',
+    'TITLE-ABS-KEY("cardiac arrest")',
+    'TITLE-ABS-KEY("prehospital")',
+  ].join(' OR ');
+
+  const url = new URL('https://api.elsevier.com/content/search/scopus');
+  url.searchParams.set('query', query);
+  url.searchParams.set('count', '25');
+  url.searchParams.set('date', new Date().getFullYear().toString());
+  url.searchParams.set('sort', '-coverDate');
+  url.searchParams.set('field', 'dc:title,dc:creator,prism:publicationName,prism:coverDate,subtypeDescription,citedby-count,prism:doi');
+  url.searchParams.set('apiKey', key);
+
+  try {
+    const res  = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
+    const data = await res.json();
+
+    if (data['service-error']) {
+      const code = data['service-error']?.status?.statusCode || '?';
+      const msg  = code === 'AUTHORIZATION_ERROR'
+        ? 'Yetkilendirme hatası — üniversite ağında veya VPN\'de olduğunuzdan emin olun.'
+        : `Scopus hatası: ${code}`;
+      if (status) status.innerHTML = `<span style="color:#dc2626">${esc(msg)}</span>`;
+      return;
+    }
+
+    const entries = (data['search-results']?.entry || []).filter(e => !e.error);
+    if (!entries.length) {
+      if (status) status.innerHTML = 'Sonuç bulunamadı.';
+      return;
+    }
+
+    mergeScopus(entries);
+
+  } catch (err) {
+    if (status) status.innerHTML = `<span style="color:#dc2626">Bağlantı hatası: ${esc(err.message)}</span>`;
+  }
+}
 </script>
 </body>
 </html>
