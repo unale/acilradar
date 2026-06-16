@@ -78,26 +78,60 @@
     }
 
     /* ── FEATURED ── */
-    .featured {
+    /* ── HAFTANIN VİTRİNİ ── */
+    .vitrin { margin-bottom: 16px; }
+    .vitrin-top {
       background: linear-gradient(135deg, #fffbeb, #fef3c7);
       border: 1px solid #fde68a;
       border-left: 4px solid var(--gold);
       border-radius: 10px;
-      padding: 16px 18px;
-      margin-bottom: 16px;
+      padding: 18px 20px;
+      margin-bottom: 10px;
       box-shadow: 0 2px 8px rgba(217,119,6,0.1);
+      position: relative;
     }
-    .featured-label {
-      font-size: 11px; font-weight: 700;
-      color: var(--gold); letter-spacing: 1.2px;
+    .vitrin-rank {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+      color: var(--gold); text-transform: uppercase;
       margin-bottom: 10px;
       display: flex; align-items: center; gap: 6px;
-      text-transform: uppercase;
     }
-    .featured-title { font-size: 16px; font-weight: 600; line-height: 1.45; margin-bottom: 10px; }
-    .featured-title a { color: var(--text); text-decoration: none; }
-    .featured-title a:hover { color: var(--tier1); }
-    .featured-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .vitrin-top-title { font-size: 16px; font-weight: 600; line-height: 1.45; margin-bottom: 10px; }
+    .vitrin-top-title a { color: var(--text); text-decoration: none; }
+    .vitrin-top-title a:hover { color: var(--tier1); }
+    .vitrin-top-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .vitrin-score {
+      position: absolute; top: 16px; right: 18px;
+      font-size: 16px; font-weight: 700; color: var(--score);
+    }
+    .vitrin-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .vitrin-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      position: relative;
+      transition: box-shadow 0.15s, border-color 0.15s;
+      cursor: default;
+    }
+    .vitrin-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.09); border-color: #c5cfe0; }
+    .vitrin-card-rank {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+      color: var(--muted); text-transform: uppercase; margin-bottom: 7px;
+    }
+    .vitrin-card-title { font-size: 13px; font-weight: 600; line-height: 1.45; margin-bottom: 8px; }
+    .vitrin-card-title a { color: var(--text); text-decoration: none; }
+    .vitrin-card-title a:hover { color: var(--tier1); }
+    .vitrin-card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; }
+    .vitrin-card-score {
+      position: absolute; top: 12px; right: 14px;
+      font-size: 13px; font-weight: 700; color: var(--score);
+    }
+    @media (max-width: 600px) { .vitrin-row { grid-template-columns: 1fr; } }
 
     /* ── FILTERS ── */
     .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -390,10 +424,29 @@
 
 <div class="container">
   <div class="main-panel">
-    <div class="featured" id="featuredBox" style="display:none">
-      <div class="featured-label">★ &nbsp;HAFTANIN MAKALESİ</div>
-      <div class="featured-title" id="featuredTitle"></div>
-      <div class="featured-meta" id="featuredMeta"></div>
+    <div class="vitrin" id="vitrinBox" style="display:none">
+      <!-- #1 büyük kart -->
+      <div class="vitrin-top">
+        <div class="vitrin-rank">★ &nbsp;HAFTANIN MAKALESİ &nbsp;·&nbsp; #1</div>
+        <div class="vitrin-top-title" id="vitrin1Title"></div>
+        <div class="vitrin-top-meta" id="vitrin1Meta"></div>
+        <div class="vitrin-score" id="vitrin1Score"></div>
+      </div>
+      <!-- #2 ve #3 küçük kartlar -->
+      <div class="vitrin-row">
+        <div class="vitrin-card" id="vitrin2" style="display:none">
+          <div class="vitrin-card-rank">#2 bu haftadan</div>
+          <div class="vitrin-card-title" id="vitrin2Title"></div>
+          <div class="vitrin-card-meta" id="vitrin2Meta"></div>
+          <div class="vitrin-card-score" id="vitrin2Score"></div>
+        </div>
+        <div class="vitrin-card" id="vitrin3" style="display:none">
+          <div class="vitrin-card-rank">#3 bu haftadan</div>
+          <div class="vitrin-card-title" id="vitrin3Title"></div>
+          <div class="vitrin-card-meta" id="vitrin3Meta"></div>
+          <div class="vitrin-card-score" id="vitrin3Score"></div>
+        </div>
+      </div>
     </div>
 
     <div class="filters" id="filterRow"></div>
@@ -541,11 +594,26 @@ const JOURNALS = [
   // ── KRİTİK BAKIM — ULUSAL (T2) ─────────────────────────
   { q:'"Medicina intensiva"[Jour]',                                  abbr:'Med Intensiva (Engl Ed)',   d:'Medicina intensiva (English edition)',                                   tier:1, base:48 },
 
+  // ── KARDİYOLOJİ & NÖROLOJİ — EK (T1) ─────────────────
+  { q:'"Journal of the American College of Cardiology"[Jour]',     abbr:'J Am Coll Cardiol',         d:'Journal of the American College of Cardiology',                          tier:1, base:62 },
+  { q:'"European heart journal"[Jour]',                             abbr:'Eur Heart J',               d:'European heart journal',                                                 tier:1, base:65 },
+  { q:'"JAMA cardiology"[Jour]',                                    abbr:'JAMA Cardiol',              d:'JAMA cardiology',                                                        tier:1, base:62 },
+  { q:'"JAMA neurology"[Jour]',                                     abbr:'JAMA Neurol',               d:'JAMA neurology',                                                         tier:1, base:60 },
+
+  // ── SOLUNUM & KRİTİK BAKIM EK (T1) ────────────────────
+  { q:'"American journal of respiratory and critical care medicine"[Jour]', abbr:'Am J Respir Crit Care Med', d:'American journal of respiratory and critical care medicine', tier:1, base:62 },
+
+  // ── CERRAHİ (T1) ───────────────────────────────────────
+  { q:'"JAMA surgery"[Jour]',                                       abbr:'JAMA Surg',                 d:'JAMA surgery',                                                           tier:1, base:58 },
+
   // ── GENEL TIP (T1) ─────────────────────────────────────
   { q:'"New England journal of medicine"[Jour]',                    abbr:'N Engl J Med',              d:'The New England journal of medicine',                                    tier:1, base:88 },
   { q:'JAMA[Jour]',                                                 abbr:'JAMA',                      d:'JAMA',                                                                   tier:1, base:80 },
   { q:'Lancet[Jour]',                                               abbr:'Lancet',                    d:'The Lancet',                                                             tier:1, base:83 },
   { q:'BMJ[Jour]',                                                  abbr:'BMJ',                       d:'BMJ',                                                                    tier:1, base:68 },
+  { q:'"JAMA network open"[Jour]',                                  abbr:'JAMA Netw Open',            d:'JAMA network open',                                                      tier:1, base:55 },
+  { q:'"Annals of internal medicine"[Jour]',                        abbr:'Ann Intern Med',            d:'Annals of internal medicine',                                            tier:1, base:68 },
+  { q:'"JAMA internal medicine"[Jour]',                             abbr:'JAMA Intern Med',           d:'JAMA internal medicine',                                                 tier:1, base:68 },
 
   // ── ULUSAL (T3) ─────────────────────────────────────────
   { q:'"Turkish journal of emergency medicine"[Jour]',            d:'Turkish journal of emergency medicine',                                  tier:3, base:20 },
@@ -600,11 +668,10 @@ function getJournalInfo(source) {
   for (const j of JOURNALS) {
     if (sl === j.d.toLowerCase()) return j;
   }
-  // 3. kısmi eşleşme (kısaltma içinde veya ad içinde)
+  // 3. ad çekirdeği ile tam eşleşme — "includes" değil "===" (BMJ Open → BMJ eşleşmesini önler)
   for (const j of JOURNALS) {
-    if (j.abbr && sl.includes(j.abbr.toLowerCase())) return j;
     const core = j.d.toLowerCase().split(/[:(,]/)[0].trim();
-    if (sl.includes(core) || core.includes(sl.split(/[:(,]/)[0].trim())) return j;
+    if (sl === core) return j;
   }
   return { tier:3, base:15 };
 }
@@ -681,25 +748,56 @@ function tierBadge(tier) {
   return `<span class="badge t${tier}">T${tier}</span>`;
 }
 
-function renderFeatured(articles) {
-  if (!articles.length) return;
-  // Kılavuz varsa onu öne çıkar, yoksa en yüksek puanlı makale
-  const guidelines = articles.filter(a => a._typeKey === 'kilavuz');
-  const a = guidelines.length > 0 ? guidelines[0] : articles[0];
-  const link = pmLink(a.uid);
-  document.getElementById('featuredTitle').innerHTML =
-    `<a href="${link}" target="_blank" rel="noopener">${esc(a.title)}</a>`;
-  const authors = fmtAuthors(a.authors);
-  document.getElementById('featuredMeta').innerHTML = `
+function buildVitrinMeta(a, compact) {
+  const authors = compact ? '' : fmtAuthors(a.authors);
+  return `
     ${tierBadge(a._tier)}
     <span class="badge btype">${esc(a._typeLabel)}</span>
     <span style="color:var(--muted)">${esc(a.source||'')}</span>
     <span class="dot">·</span>
     <span style="color:var(--muted)">${relDate(a)}</span>
-    ${authors ? `<span class="dot">·</span><span style="color:var(--muted)">${esc(authors)}</span>` : ''}
-    <span class="art-score" style="margin-left:auto">↑${a._score}</span>
+    ${authors ? `<span class="dot">·</span><span style="color:var(--muted);font-size:11px">${esc(authors)}</span>` : ''}
   `;
-  document.getElementById('featuredBox').style.display = 'block';
+}
+
+function renderFeatured(articles) {
+  if (!articles.length) return;
+
+  // Benzer başlıklı tekrarları kaldır (aynı kılavuz farklı dergide yayınlanmış olabilir)
+  const seen = new Set();
+  const unique = articles.filter(a => {
+    const key = (a.title||'').slice(0,50).toLowerCase().replace(/\s+/g,' ');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // Kılavuzları öne al, kalan sıralı liste ile birleştir
+  const guidelines = unique.filter(a => a._typeKey === 'kilavuz');
+  const rest = unique.filter(a => a._typeKey !== 'kilavuz');
+  const top3 = [...guidelines, ...rest].slice(0, 3);
+
+  if (!top3.length) return;
+
+  // #1 büyük kart
+  const a1 = top3[0];
+  document.getElementById('vitrin1Title').innerHTML =
+    `<a href="${pmLink(a1.uid)}" target="_blank" rel="noopener">${esc(a1.title)}</a>`;
+  document.getElementById('vitrin1Meta').innerHTML = buildVitrinMeta(a1, false);
+  document.getElementById('vitrin1Score').textContent = `↑${a1._score}`;
+
+  // #2 ve #3 küçük kartlar
+  [top3[1], top3[2]].forEach((a, i) => {
+    if (!a) return;
+    const n = i + 2;
+    document.getElementById(`vitrin${n}Title`).innerHTML =
+      `<a href="${pmLink(a.uid)}" target="_blank" rel="noopener">${esc(a.title)}</a>`;
+    document.getElementById(`vitrin${n}Meta`).innerHTML = buildVitrinMeta(a, true);
+    document.getElementById(`vitrin${n}Score`).textContent = `↑${a._score}`;
+    document.getElementById(`vitrin${n}`).style.display = 'block';
+  });
+
+  document.getElementById('vitrinBox').style.display = 'block';
 }
 
 function renderFilters() {
@@ -1153,8 +1251,59 @@ async function load() {
       `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
     const dateRange = `("${fmt(ago)}"[PDAT] : "${fmt(now)}"[PDAT])`;
 
-    const journalQ = JOURNALS.map(j => j.q).join(' OR ');
-    const term = `(${journalQ}) AND ${dateRange}`;
+    // Hibrit sorgu:
+    // A) MeSH + başlık → acil tıp / kritik bakım makaleleri (herhangi bir dergiden)
+    // B) Büyük genel tıp dergileri → sadece kılavuz / sistematik derleme / meta-analiz
+    //    (AHA/ACC, ESC gibi kılavuzlar Circulation/JAMA/Lancet'te yayınlanır)
+    // A) Herhangi bir dergide EM/kritik bakım odaklı makaleler (MeSH + başlık)
+    const emCcMesh = [
+      '"Emergency Medicine"[MeSH]',
+      '"Emergency Service, Hospital"[MeSH]',
+      '"Critical Care"[MeSH]',
+      '"Intensive Care Units"[MeSH]',
+      'Resuscitation[MeSH]',
+      '"Critical Illness"[MeSH]',
+      '"Emergency Medical Services"[MeSH]',
+      '"emergency medicine"[ti]',
+      '"emergency department"[ti]',
+      '"critical care"[ti]',
+      '"intensive care unit"[ti]',
+      '"resuscitation"[ti]',
+      '"cardiac arrest"[ti]',
+      '"prehospital"[ti]',
+      '"ICU"[ti]',
+    ].join(' OR ');
+    // B) Büyük dergiler: kılavuz/SR/meta/RKÇ + EM'in olmazsa olmaz hastalıkları (sepsis, inme, PE)
+    const topJournalQ = [
+      '"New England journal of medicine"[Jour]',
+      'JAMA[Jour]',
+      'Lancet[Jour]',
+      'BMJ[Jour]',
+      'Circulation[Jour]',
+      '"Journal of the American College of Cardiology"[Jour]',
+      '"European heart journal"[Jour]',
+      '"JAMA cardiology"[Jour]',
+      '"JAMA internal medicine"[Jour]',
+      '"Annals of internal medicine"[Jour]',
+      '"American journal of respiratory and critical care medicine"[Jour]',
+      '"JAMA surgery"[Jour]',
+      '"JAMA neurology"[Jour]',
+      '"JAMA network open"[Jour]',
+    ].join(' OR ');
+    // PubMed büyük kılavuzlara çoğu zaman "Review" pubtype verir, bu yüzden guideline[ti] de var
+    // NOT: "randomized controlled trial"[pt] kasıtlı kaldırıldı — çok geniş yakalıyor
+    // (nefroloji/diyabet RKÇ'ları geliyor); EM'e özgü RKÇ'lar zaten MeSH/başlık ile yakalanıyor
+    const topJournalFilter = [
+      '"practice guideline"[pt]',
+      '"systematic review"[pt]',
+      '"meta-analysis"[pt]',
+      'guideline[ti]',
+      'Sepsis[MeSH]',
+      'Stroke[MeSH]',
+      '"Pulmonary Embolism"[MeSH]',
+      '"Heart Arrest"[MeSH]',
+    ].join(' OR ');
+    const term = `((${emCcMesh}) OR ((${topJournalQ}) AND (${topJournalFilter}))) AND ${dateRange} AND English[lang]`;
 
     // 1. Search
     const searchData = await pubmedPost('esearch.fcgi', {
