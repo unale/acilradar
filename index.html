@@ -1303,7 +1303,8 @@ async function load() {
       '"Pulmonary Embolism"[MeSH]',
       '"Heart Arrest"[MeSH]',
     ].join(' OR ');
-    const term = `((${emCcMesh}) OR ((${topJournalQ}) AND (${topJournalFilter}))) AND ${dateRange} AND English[lang]`;
+    // NOT "Veterinary Medicine"[MeSH] → veteriner dergilerini dışlar
+    const term = `((${emCcMesh}) OR ((${topJournalQ}) AND (${topJournalFilter}))) AND ${dateRange} AND English[lang] NOT "Veterinary Medicine"[MeSH]`;
 
     // 1. Search
     const searchData = await pubmedPost('esearch.fcgi', {
@@ -1329,6 +1330,10 @@ async function load() {
         if (item?.title) raw.push(item);
       }
     }
+
+    // 2b. Veteriner / hayvan dergilerini kaynak adına göre filtrele
+    const VET_RE = /\bvet(erinary|erinaria)?\b|\banimal\b|\bwildlife\b|\bpoultry\b|\bequine\b|\bfeline\b|\bcanine\b|\bzoo\b/i;
+    raw = raw.filter(item => !VET_RE.test(item.source || ''));
 
     // 3. Score & sort
     allArticles = raw.map(item => {
