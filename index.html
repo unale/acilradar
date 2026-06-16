@@ -609,11 +609,24 @@ function getJournalInfo(source) {
   return { tier:3, base:15 };
 }
 
-function getTypeInfo(pubtypes) {
-  if (!pubtypes || !pubtypes.length) return TYPES.at(-1); // journal article fallback
-  const pts = pubtypes.map(p => p.toLowerCase());
-  for (const tc of TYPES) {
-    if (tc.pm.some(pm => pts.some(pt => pt.includes(pm)))) return tc;
+// İki ayrı regex — biri case-sensitive (kurum kısaltmaları için), biri case-insensitive
+// Case-sensitive: "2026 AHA/ACC..." gibi başlığın başında yıl + büyük harf kurum + guideline
+// (^.{0,25} kısıtı: yıl başlığın başında olmak zorunda — meta-analiz başlıklarında gömülü yıl+kurum'u önler)
+const GUIDELINE_SOCIETY_RE = /^.{0,25}\b\d{4}\s+(?:[A-Z]{2,}[/\-])*[A-Z]{2,}[^\n]{0,80}\b[Gg]uideline/;
+// Case-insensitive: yapısal kalıplar
+// - "Guidelines: alt başlık" veya "Guideline. Devam"
+// - Tekil "Guideline" başlık sonunda (YEARS Guideline, ESC Guideline vb.)
+const GUIDELINE_STRUCT_RE = /\bguidelines?\s*[:.]\s|\bguideline\s*[.?!]?\s*$/i;
+
+function getTypeInfo(pubtypes, title) {
+  if (title && (GUIDELINE_SOCIETY_RE.test(title) || GUIDELINE_STRUCT_RE.test(title))) {
+    return TYPES.find(t => t.key === 'kilavuz');
+  }
+  if (pubtypes && pubtypes.length) {
+    const pts = pubtypes.map(p => p.toLowerCase());
+    for (const tc of TYPES) {
+      if (tc.pm.some(pm => pts.some(pt => pt.includes(pm)))) return tc;
+    }
   }
   return TYPES.at(-1);
 }
@@ -649,7 +662,7 @@ function pmLink(uid) {
 
 function scoreItem(item) {
   const j = getJournalInfo(item.source);
-  const t = getTypeInfo(item.pubtype);
+  const t = getTypeInfo(item.pubtype, item.title);
   const d = parsePubDate(item);
   const daysOld = Math.max(0, (Date.now() - d) / 86400000);
   const rec = Math.max(0, Math.round(7 - daysOld));
